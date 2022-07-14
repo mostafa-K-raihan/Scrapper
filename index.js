@@ -1,7 +1,6 @@
-const path = require("path");
 const express = require("express");
 const redis = require("redis");
-const { fetch } = require("./fetch");
+const { searchFlights, fetchDailyStar } = require("./fetch");
 
 const app = express();
 
@@ -36,7 +35,6 @@ async function cache(req, res, next) {
 }
 
 app.get("/", cache, async (req, res) => {
-  // res.sendFile(path.join(__dirname + '/index.html'));
   const data = await fetch();
   console.log("not from cache");
   await redisClient.setEx("data", 120, JSON.stringify(data));
@@ -47,11 +45,24 @@ app.get("/search", async (req, res) => {
   const q = req.query.q;
   try {
     if (q) {
-      const data = await fetch(q);
+      const data = await fetchDailyStar(q);
       return res.json(data);
     }
     return res.send("You have not searched for anything");
   } catch (err) {
     return res.status(500).send("Hah");
   }
+});
+
+app.get("/flights", async (req, res) => {
+  const { origin, dest } = req.query;
+
+  if (!origin || !dest) {
+    return res
+      .status(400)
+      .json({ message: "origin and dest must be provided" });
+  }
+  const flightInfo = await searchFlights(origin, dest);
+  console.log({ flightInfo });
+  res.json({ flightInfo });
 });
