@@ -66,3 +66,5 @@ app.get("/flights", async (req, res) => {
   console.log({ flightInfo });
   res.json({ flightInfo });
 });
+
+module.exports = app;
