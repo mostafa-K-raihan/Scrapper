@@ -20,6 +20,7 @@
     "redis": "^4.2.0"
   },
   "devDependencies": {
+    "@vercel/node": "^2.4.4",
     "nodemon": "^2.0.19"
   }
 }
