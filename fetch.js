@@ -22,13 +22,18 @@ async function fetchDevTo(param) {
   return titles;
 }
 
-async function fetchDailyStar(param) {
-  const { data: html } = await axios.get(`https://www.thedailystar.net`, {
+function getAxiosOptions() {
+  return {
     headers: {
       "user-agent":
         "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/103.0.5060.114 Safari/537.36 Edg/103.0.1264.49",
     },
-  });
+  };
+}
+
+async function fetchDailyStar(param) {
+  const axiosOption = getAxiosOptions();
+  const { data: html } = await axios.get(`https://www.thedailystar.net`, axiosOption);
   const $ = cheerio.load(html);
   const titles = [];
   $("h3.title").each(function () {
@@ -45,17 +50,54 @@ async function fetchDailyStar(param) {
     });
   });
 
+  console.log('Fetched urls');
+  const urls = titles.map(t => t.url);
+
+  const htmls = await Promise.all(urls.map(u => {
+    return axios.get(u, axiosOption)
+  }));
+  console.log('Fetched all contents');
+
+  const contents = htmls.map((h, index) => {
+    const $ = cheerio.load(h.data);
+
+    return $("div.section-content").text().trim();
+  });
+
+  titles.forEach((t, index) => {
+    t.content = contents[index];
+  });
+
+  console.log(contents);
+  console.log('Parsing Done');
+  // console.log(titles);
   return titles;
 }
 
-async function searchFlights(origin, dest) {
-  console.log(`searching for flights to ${origin} -> ${dest}`);
+function getBimanBangladeshURL(origin, dest) {
   const today = new Date();
   const activeMonth = `${
     today.getMonth() + 1
   }-${today.getDate()}-${today.getFullYear()}`;
   const baseURL = "https://booking.biman-airlines.com/dx/BGDX/#/date-selection";
   const url = `${baseURL}?journeyType=one-way&origin=${origin}&destination=${dest}&activeMonth=${activeMonth}`;
+  
+  return url;
+}
+
+
+async function searchBimanBangladeshFlights(origin, dest) {
+  console.log(`Searching for flights from ${origin} to ${dest}`);
+  const url = getBimanBangladeshURL(origin, dest);
+  console.log({ url });
+
+  const { data: html } = await axios.get(url, getAxiosOptions());
+  console.log(html);
+}
+
+async function searchFlights(origin, dest) {
+  console.log(`searching for flights to ${origin} -> ${dest}`);
+  const url = getBimanBangladeshURL(origin, dest);
   async function run() {
     const browser = await puppeteer.launch();
     const page = await browser.newPage();
@@ -94,4 +136,5 @@ module.exports = {
   fetchDevTo,
   fetchDailyStar,
   searchFlights,
+  searchBimanBangladeshFlights,
 };

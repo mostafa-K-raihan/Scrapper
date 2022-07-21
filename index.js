@@ -1,6 +1,6 @@
 const express = require("express");
 // const redis = require("redis");
-const { searchFlights, fetchDailyStar } = require("./fetch");
+const { searchFlights, searchBimanBangladeshFlights, fetchDailyStar } = require("./fetch");
 
 const app = express();
 
@@ -62,9 +62,14 @@ app.get("/flights", async (req, res) => {
       .status(400)
       .json({ message: "origin and dest must be provided" });
   }
-  const flightInfo = await searchFlights(origin, dest);
+  const flightInfo = await searchBimanBangladeshFlights(origin, dest);
   console.log({ flightInfo });
   res.json({ flightInfo });
+});
+
+app.use((err, req, res, next) => {
+  console.error(err.stack)
+  res.status(500).send('Something broke!')
 });
 
 module.exports = app;
